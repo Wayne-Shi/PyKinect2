@@ -6,6 +6,8 @@ import ctypes
 import _ctypes
 import pygame
 import sys
+import logging
+from datetime import datetime
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
@@ -25,6 +27,13 @@ SKELETON_COLORS = [pygame.color.THECOLORS["blue"] ]
 #                  pygame.color.THECOLORS["violet"]]
 
 
+def logging_function(angle):
+    x = datetime.now()
+    y = datetime.strftime(x, "%m-%d-%Y %H:%M:%S")
+    logging.info(str(angle) + ' degrees at ' + y)
+
+
+
 class BodyGameRuntime(object):
     def __init__(self):
         pygame.init()
@@ -37,7 +46,7 @@ class BodyGameRuntime(object):
         self._screen = pygame.display.set_mode((self._infoObject.current_w >> 1, self._infoObject.current_h >> 1), 
                                                pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
 
-        pygame.display.set_caption("Kinect for Windows v2 Body Game")
+        pygame.display.set_caption("Neck Teck Position Monitor beta 1.0.0")
 
         # Loop until the user clicks the close button.
         self._done = False
@@ -144,27 +153,35 @@ class BodyGameRuntime(object):
                 or joint3State == PyKinectV2.TrackingState_Inferred:
             data_available = False
 
-        if data_available:
-            line1 = (joints[joint1].Position.x - joints[joint0].Position.x,
-                    joints[joint1].Position.y - joints[joint0].Position.y,
-                    joints[joint1].Position.z - joints[joint0].Position.z)
-            line2 = (joints[joint3].Position.x - joints[joint2].Position.x,
-                    joints[joint3].Position.y - joints[joint2].Position.y,
-                    joints[joint3].Position.z - joints[joint2].Position.z)
 
-            line1_u = line1 / np.linalg.norm(line1)
-            line2_u = line2 / np.linalg.norm(line2)
-            angle_2pi = np.arccos(np.clip(np.dot(line1_u, line2_u), -1.0, 1.0))
-            angle_360 = angle_2pi*180/3.1415926
+        line1 = (joints[joint1].Position.x - joints[joint0].Position.x,
+                joints[joint1].Position.y - joints[joint0].Position.y,
+                joints[joint1].Position.z - joints[joint0].Position.z)
+        line2 = (joints[joint3].Position.x - joints[joint2].Position.x,
+                joints[joint3].Position.y - joints[joint2].Position.y,
+                joints[joint3].Position.z - joints[joint2].Position.z)
+
+        line1_u = line1 / np.linalg.norm(line1)
+        line2_u = line2 / np.linalg.norm(line2)
+        angle_2pi = np.arccos(np.clip(np.dot(line1_u, line2_u), -1.0, 1.0))
+        angle_360 = angle_2pi*180/3.1415926
+        if data_available:
             print(round(angle_360, 3))
+            logging_function(round(angle_360, 3))
+
+        return round(angle_360, 3)
 
     def draw_body(self, joints, jointPoints, color):
-        self.detect_joint_angle(joints, jointPoints, PyKinectV2.JointType_Head, PyKinectV2.JointType_Neck,PyKinectV2.JointType_Neck, PyKinectV2.JointType_SpineShoulder)
+        angle = self.detect_joint_angle(joints, jointPoints, PyKinectV2.JointType_Head, PyKinectV2.JointType_Neck,PyKinectV2.JointType_Neck, PyKinectV2.JointType_SpineShoulder)
+        if angle>25:
+            alert_color = pygame.color.THECOLORS["red"]
+        else:
+            alert_color = color
         # Torso
-        self.show_the_alert(text = "Hahaha hello", state = 'alert')
-        self.draw_body_bone(joints, jointPoints, color, PyKinectV2.JointType_Head, PyKinectV2.JointType_Neck);
+        #self.show_the_alert(text = "Hahaha hello", state = 'alert')
+        self.draw_body_bone(joints, jointPoints, alert_color, PyKinectV2.JointType_Head, PyKinectV2.JointType_Neck);
         self.draw_body_joint(joints, jointPoints, color, PyKinectV2.JointType_Head)
-        self.draw_body_bone(joints, jointPoints, color, PyKinectV2.JointType_Neck, PyKinectV2.JointType_SpineShoulder);
+        self.draw_body_bone(joints, jointPoints, alert_color, PyKinectV2.JointType_Neck, PyKinectV2.JointType_SpineShoulder);
         self.draw_body_bone(joints, jointPoints, color, PyKinectV2.JointType_SpineShoulder, PyKinectV2.JointType_SpineMid);
         self.draw_body_bone(joints, jointPoints, color, PyKinectV2.JointType_SpineMid, PyKinectV2.JointType_SpineBase);
         self.draw_body_bone(joints, jointPoints, color, PyKinectV2.JointType_SpineShoulder, PyKinectV2.JointType_ShoulderRight);
@@ -262,6 +279,8 @@ class BodyGameRuntime(object):
 
 
 __main__ = "Neck Teck Position Monitor beta 1.0.0"
+logfile = 'neck_angle_tracking.log'
+logging.basicConfig(filename=logfile, filemode='w', level=logging.INFO)
 game = BodyGameRuntime();
 game.run();
 

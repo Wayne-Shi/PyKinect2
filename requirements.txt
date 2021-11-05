@@ -1,0 +1,5 @@
+pykinect2~=0.1.0
+numpy
+setuptools~=57.0.0
+comtypes=1.1.4
+pygame
