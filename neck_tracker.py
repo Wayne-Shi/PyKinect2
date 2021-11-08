@@ -8,6 +8,10 @@ import pygame
 import sys
 import logging
 from datetime import datetime
+import requests
+
+
+server_name = "http://192.168.86.26:5011/"
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
@@ -17,7 +21,7 @@ else:
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 100)
 
-# colors for drawing different bodies 
+# colors for drawing different bodies
 SKELETON_COLORS = [pygame.color.THECOLORS["blue"] ]
 #                  pygame.color.THECOLORS["red"],
 #                  pygame.color.THECOLORS["green"],
@@ -27,11 +31,13 @@ SKELETON_COLORS = [pygame.color.THECOLORS["blue"] ]
 #                  pygame.color.THECOLORS["violet"]]
 
 
-def logging_function(angle):
-    x = datetime.now()
-    y = datetime.strftime(x, "%m-%d-%Y %H:%M:%S")
-    logging.info(str(angle) + ' degrees at ' + y)
+def logging_function(angle, the_time):
+    logging.info(str(angle) + ' degrees at ' + the_time)
 
+def send_request(angle, the_time):
+    data_point = {'angle': angle, 'time': the_time}
+    new_patient_post = requests.post(server_name + "take_data",
+                                     json=data_point)
 
 
 class BodyGameRuntime(object):
@@ -76,7 +82,7 @@ class BodyGameRuntime(object):
         if (joint0State == PyKinectV2.TrackingState_Inferred) or (joint1State == PyKinectV2.TrackingState_Inferred):
             return
 
-        # ok, at least one is good 
+        # ok, at least one is good
         start = (jointPoints[joint0].x, jointPoints[joint0].y)
         end = (jointPoints[joint1].x, jointPoints[joint1].y)
 
@@ -167,7 +173,9 @@ class BodyGameRuntime(object):
         angle_360 = angle_2pi*180/3.1415926
         if data_available:
             print(round(angle_360, 3))
-            logging_function(round(angle_360, 3))
+            the_time = datetime.strftime(datetime.now(), "%m-%d-%Y %H:%M:%S")
+            logging_function(round(angle_360, 3), the_time)
+            send_request(round(angle_360, 3), the_time)
 
         return round(angle_360, 3)
 
