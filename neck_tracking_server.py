@@ -16,6 +16,10 @@ angle = []
 data = []
 app = Flask(__name__)
 
+@app.route('/', methods=['GET'])
+def server_status():
+    return 'Welcome to the Neck Teck Server! The Server is on!'
+
 @app.route('/take_data', methods=['POST'])
 def take_data():
     in_data = request.get_json()

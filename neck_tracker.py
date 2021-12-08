@@ -11,7 +11,7 @@ from datetime import datetime
 import requests
 
 
-server_name = "http://192.168.86.26:5011/"
+server_name = "http://10.197.202.36:5011/"
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
